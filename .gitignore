@@ -52,3 +52,6 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Client-side libraries (restored via LibMan or npm)
+**/wwwroot/lib/

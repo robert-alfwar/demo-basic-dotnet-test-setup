@@ -77,6 +77,14 @@ dotnet tool install --global dotnet-reportgenerator-globaltool
 
 # 14. Install Microsoft.AspNetCore.Mvc.Testing
 dotnet add MyProject.IntegrationTests package Microsoft.AspNetCore.Mvc.Testing
+
+# 15. Install LibMan CLI tool (for client-side libraries)
+dotnet tool install --global Microsoft.Web.LibraryManager.Cli
+
+# 16. Restore client-side libraries (Bootstrap, jQuery, etc.)
+cd MyProject
+libman restore
+cd ..
 ```
 
 ---
@@ -525,20 +533,32 @@ git clone <repository-url>
 cd MySolution
 ```
 
-### 2. Build the Project
+### 2. Restore Client-Side Libraries
+
+```bash
+# Install LibMan CLI tool (one-time setup)
+dotnet tool install --global Microsoft.Web.LibraryManager.Cli
+
+# Restore client-side libraries (Bootstrap, jQuery, etc.)
+cd MyProject
+libman restore
+cd ..
+```
+
+### 3. Build the Project
 
 ```bash
 dotnet build
 ```
 
-### 3. Run the Application
+### 4. Run the Application
 
 ```bash
 cd MyProject
 dotnet run
 ```
 
-Visit `https://localhost:5001` in your browser (port may vary, check the logs).
+Visit `http://localhost:5171` or `https://localhost:7205` in your browser.
 
 ## 🧪 Running Tests
 
@@ -560,30 +580,133 @@ dotnet test --filter Category=Unit
 dotnet test --filter Category=Integration
 ```
 
-### Run Tests with Code Coverage
+### Run Tests with Code Coverage (Unit Tests Only)
+
+**IMPORTANT:** Code coverage should only measure unit tests, not integration tests.
 
 ```bash
-dotnet test /p:CollectCoverage=true
+# Run only unit tests with coverage
+dotnet test --filter Category=Unit /p:CollectCoverage=true
 ```
 
 ### Generate Code Coverage Report
 
-```bash
-# Run tests with code coverage first
-dotnet test /p:CollectCoverage=true
+**Prerequisites (one-time setup):**
 
-# Generate HTML report
-dotnet tool run reportgenerator \
+**Option 1: Global Installation (recommended for personal use)**
+```bash
+# Install ReportGenerator tool globally
+dotnet tool install --global dotnet-reportgenerator-globaltool
+```
+
+**Option 2: Local Installation (recommended for team projects)**
+```bash
+# Create tool manifest if it doesn't exist
+dotnet new tool-manifest
+
+# Install ReportGenerator as local tool
+dotnet tool install dotnet-reportgenerator-globaltool
+
+# Team members can restore tools with:
+dotnet tool restore
+```
+
+**Windows PowerShell:**
+```powershell
+# 1. Run unit tests with code coverage
+dotnet test --filter Category=Unit /p:CollectCoverage=true
+
+# 2. Generate HTML report
+# If installed globally:
+reportgenerator -reports:./MyProject.UnitTests/TestResults/coverage.cobertura.xml -targetdir:./TestResults/CoverageReport -reporttypes:Html
+
+# If installed locally:
+dotnet reportgenerator -reports:./MyProject.UnitTests/TestResults/coverage.cobertura.xml -targetdir:./TestResults/CoverageReport -reporttypes:Html
+
+# 3. Open report in browser
+start ./TestResults/CoverageReport/index.html
+```
+
+**Mac/Linux (bash):**
+```bash
+# 1. Run unit tests with code coverage
+dotnet test --filter Category=Unit /p:CollectCoverage=true
+
+# 2. Generate HTML report
+# If installed globally:
+reportgenerator \
   -reports:./MyProject.UnitTests/TestResults/coverage.cobertura.xml \
   -targetdir:./TestResults/CoverageReport \
   -reporttypes:Html
 
-# Open report (Windows)
-start ./TestResults/CoverageReport/index.html
+# If installed locally:
+dotnet reportgenerator \
+  -reports:./MyProject.UnitTests/TestResults/coverage.cobertura.xml \
+  -targetdir:./TestResults/CoverageReport \
+  -reporttypes:Html
 
-# Open report (Mac/Linux)
+# 3. Open report in browser
 open ./TestResults/CoverageReport/index.html
 ```
+
+### View Coverage in Terminal
+
+**Windows PowerShell:**
+```powershell
+# Run with detailed coverage output
+dotnet test --filter Category=Unit /p:CollectCoverage=true
+
+# View summary in terminal
+# If installed globally:
+reportgenerator -reports:./MyProject.UnitTests/TestResults/coverage.cobertura.xml -targetdir:./TestResults/CoverageReport -reporttypes:TextSummary
+
+# If installed locally:
+dotnet reportgenerator -reports:./MyProject.UnitTests/TestResults/coverage.cobertura.xml -targetdir:./TestResults/CoverageReport -reporttypes:TextSummary
+
+# Display the summary
+Get-Content ./TestResults/CoverageReport/Summary.txt
+```
+
+**Mac/Linux (bash):**
+```bash
+# Run with detailed coverage output
+dotnet test --filter Category=Unit /p:CollectCoverage=true
+
+# View summary in terminal
+# If installed globally:
+reportgenerator \
+  -reports:./MyProject.UnitTests/TestResults/coverage.cobertura.xml \
+  -targetdir:./TestResults/CoverageReport \
+  -reporttypes:TextSummary
+
+# If installed locally:
+dotnet reportgenerator \
+  -reports:./MyProject.UnitTests/TestResults/coverage.cobertura.xml \
+  -targetdir:./TestResults/CoverageReport \
+  -reporttypes:TextSummary
+
+# Display the summary
+cat ./TestResults/CoverageReport/Summary.txt
+```
+
+### View Coverage in VS Code
+
+**Recommended Extension:** [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters)
+
+1. Install the Coverage Gutters extension in VS Code
+2. Run tests with coverage: `dotnet test --filter Category=Unit /p:CollectCoverage=true`
+3. Open any source file in `MyProject/`
+4. Click "Watch" in the status bar or press `Ctrl+Shift+7` (Windows/Linux) or `Cmd+Shift+7` (Mac)
+5. Coverage will be displayed with colored gutters:
+   - 🟢 **Green** - Line is covered by tests
+   - 🔴 **Red** - Line is not covered by tests
+   - 🟡 **Yellow** - Line is partially covered
+
+**Alternative:** Use the built-in VS Code Test Explorer:
+1. Install [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) (includes Test Explorer)
+2. Open the Testing panel in VS Code (beaker icon in the sidebar)
+3. Run tests directly from the Test Explorer
+4. View test results inline in the editor
 
 ## 📁 Project Structure
 
@@ -649,7 +772,7 @@ After implementation, verify that:
 - [ ] All tests pass: `dotnet test`
 - [ ] Unit tests can be run separately: `dotnet test --filter Category=Unit`
 - [ ] Integration tests can be run separately: `dotnet test --filter Category=Integration`
-- [ ] Code coverage works: `dotnet test /p:CollectCoverage=true`
+- [ ] Code coverage works (unit tests only): `dotnet test --filter Category=Unit /p:CollectCoverage=true`
 - [ ] Code coverage report generates correctly
 - [ ] Program.cs is `public partial class Program { }`
 - [ ] RestSharp uses modern syntax: `new RestRequest("/")`
@@ -1204,7 +1327,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5171',
         changeOrigin: true,
         secure: false,
       },
@@ -1360,7 +1483,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Calculator E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5000');
+    await page.goto('http://localhost:5171');
     await page.waitForSelector('[data-testid="calculator"]');
   });
 
@@ -1453,7 +1576,7 @@ test.describe('Calculator API Integration', () => {
       response => response.url().includes('/api/calculatorapi/add') && response.status() === 200
     );
     
-    await page.goto('http://localhost:5000');
+    await page.goto('http://localhost:5171');
     await page.locator('[data-testid="input-a"]').fill('7');
     await page.locator('[data-testid="input-b"]').fill('3');
     await page.locator('[data-testid="calculate-button"]').click();
@@ -1485,7 +1608,7 @@ export default defineConfig({
   reporter: 'html',
   
   use: {
-    baseURL: 'http://localhost:5000',
+    baseURL: 'http://localhost:5171',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -1507,7 +1630,7 @@ export default defineConfig({
 
   webServer: {
     command: 'dotnet run --project ../MyProject/MyProject.csproj',
-    url: 'http://localhost:5000',
+    url: 'http://localhost:5171',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
@@ -1604,10 +1727,10 @@ npx playwright test --project=webkit
 
 ## 📋 Extended Verification Checklist
 
-- [ ] Backend API works: `curl http://localhost:5000/api/calculatorapi/health`
+- [ ] Backend API works: `curl http://localhost:5171/api/calculatorapi/health`
 - [ ] Frontend builds: `cd MyProject/ClientApp && npm run build`
 - [ ] Frontend starts in dev mode: `npm run dev`
-- [ ] Application serves frontend: `dotnet run` and visit `http://localhost:5000`
+- [ ] Application serves frontend: `dotnet run` and visit `http://localhost:5171`
 - [ ] Playwright tests installed: `cd MyProject.PlaywrightTests && npx playwright install`
 - [ ] All Playwright tests pass: `npm test`
 - [ ] Calculator UI is accessible and has proper test attributes
@@ -1659,3 +1782,181 @@ All interactive elements have `data-testid` attributes for reliable testing:
 - [Playwright Documentation](https://playwright.dev/)
 - [Axios Documentation](https://axios-http.com/)
 - [TypeScript Documentation](https://www.typescriptlang.org/)
+
+---
+
+## 🔧 VS Code Configuration
+
+### `.vscode/extensions.json`
+
+Recommended extensions for optimal development experience:
+
+```json
+{
+  "recommendations": [
+    "ryanluker.vscode-coverage-gutters",
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.csdevkit"
+  ]
+}
+```
+
+**Extension Details:**
+
+1. **Coverage Gutters** (`ryanluker.vscode-coverage-gutters`)
+   - Displays code coverage inline in the editor
+   - Shows covered/uncovered lines with colored gutters
+   - Supports Cobertura format from Coverlet
+   - Keyboard shortcut: `Ctrl+Shift+7` (Windows/Linux) or `Cmd+Shift+7` (Mac)
+
+2. **C#** (`ms-dotnettools.csharp`)
+   - Official C# language support
+   - IntelliSense and code navigation
+   - Debugging support
+   - Required for .NET development
+
+3. **C# Dev Kit** (`ms-dotnettools.csdevkit`)
+   - Modern test explorer integration
+   - Solution explorer
+   - Project management
+   - Replaces deprecated test explorer extensions
+
+### `.vscode/settings.json` (Optional)
+
+```json
+{
+  "coverage-gutters.coverageFileNames": [
+    "MyProject.UnitTests/TestResults/coverage.cobertura.xml"
+  ],
+  "coverage-gutters.showLineCoverage": true,
+  "coverage-gutters.showRulerCoverage": true,
+  "dotnet-test-explorer.testProjectPath": "**/*Tests.csproj",
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true,
+    "**/node_modules": true
+  }
+}
+```
+
+---
+
+## 📊 Code Coverage Best Practices
+
+### Why Unit Tests Only?
+
+**Integration tests should NOT be included in code coverage metrics because:**
+
+1. **Purpose Mismatch**: Integration tests verify system behavior, not code paths
+2. **False Metrics**: They inflate coverage numbers without testing individual units
+3. **Maintenance**: Integration tests are slower and test multiple components
+4. **Industry Standard**: Code coverage is specifically for unit test quality measurement
+
+### Coverage Goals
+
+- **Target**: 80%+ coverage for business logic
+- **Focus**: Critical paths and edge cases
+- **Exclude**: Generated code, DTOs, simple properties
+- **Review**: Coverage reports regularly to identify gaps
+
+### Running Coverage Correctly
+
+```bash
+# ✅ CORRECT: Only unit tests
+dotnet test --filter Category=Unit /p:CollectCoverage=true
+
+# ❌ WRONG: All tests (includes integration)
+dotnet test /p:CollectCoverage=true
+```
+
+---
+
+## 🎓 Learning Resources
+
+### Testing Fundamentals
+- [xUnit Best Practices](https://xunit.net/docs/comparisons)
+- [Unit Testing Best Practices](https://docs.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices)
+- [Integration Testing in ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/test/integration-tests)
+
+### Code Coverage
+- [Coverlet Documentation](https://github.com/coverlet-coverage/coverlet/blob/master/Documentation/VSTestIntegration.md)
+- [ReportGenerator Documentation](https://github.com/danielpalme/ReportGenerator/wiki)
+- [Code Coverage Best Practices](https://martinfowler.com/bliki/TestCoverage.html)
+
+### E2E Testing
+- [Playwright Best Practices](https://playwright.dev/docs/best-practices)
+- [Playwright Test Generator](https://playwright.dev/docs/codegen)
+- [Playwright Debugging](https://playwright.dev/docs/debug)
+
+---
+
+## 🚀 Quick Start Summary
+
+### For Students/Beginners
+
+1. **Clone and Build**
+   ```bash
+   git clone <repository-url>
+   cd MySolution
+   dotnet build
+   ```
+
+2. **Run Tests**
+   ```bash
+   # All tests
+   dotnet test
+   
+   # Unit tests only
+   dotnet test --filter Category=Unit
+   
+   # With coverage
+   dotnet test --filter Category=Unit /p:CollectCoverage=true
+   ```
+
+3. **View Coverage in VS Code**
+   - Install Coverage Gutters extension
+   - Run tests with coverage
+   - Press `Ctrl+Shift+7` to toggle coverage display
+
+### For Instructors
+
+This project demonstrates:
+- ✅ TDD workflow with unit and integration tests
+- ✅ Proper test categorization with `[Trait]` attributes
+- ✅ Code coverage measurement (unit tests only)
+- ✅ Modern .NET 9.0 with minimal hosting
+- ✅ RestSharp v112+ for integration tests
+- ✅ WebApplicationFactory for in-memory testing
+- ✅ Optional: React + Playwright for E2E testing
+
+---
+
+## 📝 Final Notes
+
+### Project Maintenance
+
+- **Keep packages updated**: Run `dotnet list package --outdated` regularly
+- **Review coverage**: Aim for 80%+ on business logic
+- **Test naming**: Use descriptive names following `MethodName_Scenario_ExpectedResult`
+- **Test organization**: Group related tests with `[Trait]` attributes
+
+### Common Issues
+
+1. **"Program class not found"** → Ensure `public partial class Program { }` in Program.cs
+2. **Coverage not showing** → Check file path in Coverage Gutters settings
+3. **Integration tests fail** → Verify WebApplicationFactory can access Program class
+4. **Playwright tests timeout** → Ensure backend is running on correct port
+
+### Support
+
+For issues or questions:
+1. Check the verification checklist
+2. Review the troubleshooting section
+3. Consult the linked documentation
+4. Check GitHub issues for similar problems
+
+---
+
+**Document Version**: 2.0
+**Last Updated**: 2025-01-24
+**Compatibility**: .NET 9.0, xUnit 2.9.2, Playwright 1.48.2
